@@ -1,0 +1,6 @@
+Flask>=2.0
+pandas
+werkzeug
+python-dotenv
+gunicorn
+Flask-Mail

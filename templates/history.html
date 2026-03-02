@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Appointment History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-primary">
+    <div class="container">
+        <span class="navbar-brand">My Appointments</span>
+        <a href="/dashboard" class="btn btn-light btn-sm">Dashboard</a>
+    </div>
+</nav>
+
+<div class="container mt-5">
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-success">
+            {{ messages[0] }}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!DOCTYPE html>
+<html>
+<head>
+    <title>My Appointments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <h3>My Appointments</h3>
+
+    <table class="table table-bordered">
+        <tr>
+            <th>ID</th>
+            <th>Doctor</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+        {% for appt in appointments %}
+        <tr>
+            <td>{{ appt[0] }}</td>
+            <td>{{ appt[2] }}</td>
+            <td>{{ appt[3] }}</td>
+            <td>
+                <a href="/delete_appointment/{{ appt[0] }}"
+                   class="btn btn-danger btn-sm">Cancel</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/dashboard" class="btn btn-primary">Back</a>
+</div>
+
+</body>
+</html>
+<table class="table table-bordered shadow">
+        <thead class="table-primary">
+            <tr>
+                <th>ID</th>
+                <th>Doctor</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appt in appointments %}
+            <tr>
+                <td>{{ appt[0] }}</td>
+                <td>{{ appt[2] }}</td>
+                <td>{{ appt[3] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+</body>
+</html>
