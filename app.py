@@ -30,7 +30,11 @@ APPOINTMENTS_FILE = os.path.join(DATA_DIR, "appointments.csv")
 DOCTORS_FILE = os.path.join(DATA_DIR, "doctors.csv")
 NOTIFICATIONS_FILE = os.path.join(DATA_DIR, "notifications.csv")
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static")
+)
 app.secret_key = os.environ.get("SECRET_KEY", "smart_hospital_super_secret_key_2026")
 
 # --------------------
