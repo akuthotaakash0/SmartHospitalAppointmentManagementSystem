@@ -1,24 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Admin Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal Login — Smart Hospital</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-<body class="bg-light">
 
-<div class="container mt-5 col-md-4">
-    <div class="card shadow">
-        <div class="card-body">
-            <h3 class="text-center">Admin Login</h3>
+<body class="bg-light d-flex flex-column min-vh-100 justify-content-between">
 
-            <form method="POST">
-                <input type="text" name="username" class="form-control mb-3" placeholder="Username" required>
-                <input type="password" name="password" class="form-control mb-3" placeholder="Password" required>
-                <button class="btn btn-dark w-100">Login</button>
-            </form>
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand navbar-brand-custom" href="/">
+                <span class="navbar-brand-icon"
+                    style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);"><i
+                        class="bi bi-shield-lock"></i></span>
+                Smart Hospital Admin
+            </a>
+            <a href="/" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Patient Site
+            </a>
+        </div>
+    </nav>
+
+    <!-- FORM -->
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+                <div class="card card-modern p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <div class="navbar-brand-icon mx-auto mb-3"
+                            style="width: 52px; height: 52px; font-size: 1.6rem; background: #0f172a;">
+                            <i class="bi bi-shield-lock text-warning"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark">Staff Portal</h3>
+                        <p class="text-muted small">Authorized Hospital Administrators Only</p>
+                    </div>
+
+                    {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                    {% for msg in messages %}
+                    <div class="alert alert-danger alert-custom py-2 mb-3 small d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-x text-danger"></i>
+                        <span>{{ msg }}</span>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="/admin">
+                        <div class="mb-3">
+                            <label class="form-label form-label-modern">Admin Username or Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                        class="bi bi-person"></i></span>
+                                <input type="text" name="username"
+                                    class="form-control form-control-modern border-start-0 ps-0"
+                                    placeholder="admin or admin@hospital.com" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label form-label-modern">Admin Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                        class="bi bi-key"></i></span>
+                                <input type="password" name="password" id="adminPassword"
+                                    class="form-control form-control-modern border-start-0 border-end-0 ps-0"
+                                    placeholder="••••••••" required>
+                                <button class="btn btn-outline-secondary border-start-0 bg-white text-muted"
+                                    type="button" onclick="toggleAdminPass()">
+                                    <i class="bi bi-eye" id="toggleAdminIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-dark w-100 py-2">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Authenticate
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-2 border-top">
+                        <a href="/login" class="text-muted small text-decoration-none">
+                            <i class="bi bi-person me-1"></i> Patient Login Portal
+                        </a>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
+    <!-- FOOTER -->
+    <footer class="footer-custom py-3 text-center small text-secondary">
+        Smart Hospital System &copy; 2026. Administrative Control Center.
+    </footer>
+
+    <script>
+        function toggleAdminPass() {
+            var pass = document.getElementById("adminPassword");
+            var icon = document.getElementById("toggleAdminIcon");
+            if (pass.type === "password") {
+                pass.type = "text";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            } else {
+                pass.type = "password";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            }
+        }
+    </script>
 </body>
+
 </html>

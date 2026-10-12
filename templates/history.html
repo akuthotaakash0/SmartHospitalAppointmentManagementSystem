@@ -1,84 +1,131 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Appointment History</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Appointments — Smart Hospital</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-<body class="bg-light">
 
-<nav class="navbar navbar-dark bg-primary">
-    <div class="container">
-        <span class="navbar-brand">My Appointments</span>
-        <a href="/dashboard" class="btn btn-light btn-sm">Dashboard</a>
-    </div>
-</nav>
+<body class="bg-light d-flex flex-column min-vh-100 justify-content-between">
 
-<div class="container mt-5">
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand navbar-brand-custom" href="/dashboard">
+                <span class="navbar-brand-icon"><i class="bi bi-hospital"></i></span>
+                Smart Hospital
+            </a>
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="alert alert-success">
-            {{ messages[0] }}
+            <div class="d-flex align-items-center gap-2">
+                <a href="/dashboard" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                    <i class="bi bi-grid me-1"></i> Dashboard
+                </a>
+                <a href="/logout" class="btn btn-danger btn-sm rounded-pill px-3">
+                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                </a>
+            </div>
         </div>
-      {% endif %}
-    {% endwith %}
+    </nav>
 
-    <!DOCTYPE html>
-<html>
-<head>
-    <title>My Appointments</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+    <!-- CONTENT -->
+    <div class="container py-5">
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-2">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Appointment History</h3>
+                <p class="text-muted small mb-0">Review, manage, or cancel your upcoming hospital consultations</p>
+            </div>
+            <a href="/dashboard" class="btn btn-brand rounded-pill btn-sm px-3">
+                <i class="bi bi-plus-circle me-1"></i> Book New Appointment
+            </a>
+        </div>
 
-<div class="container mt-5">
-    <h3>My Appointments</h3>
-
-    <table class="table table-bordered">
-        <tr>
-            <th>ID</th>
-            <th>Doctor</th>
-            <th>Date</th>
-            <th>Action</th>
-        </tr>
-        {% for appt in appointments %}
-        <tr>
-            <td>{{ appt[0] }}</td>
-            <td>{{ appt[2] }}</td>
-            <td>{{ appt[3] }}</td>
-            <td>
-                <a href="/delete_appointment/{{ appt[0] }}"
-                   class="btn btn-danger btn-sm">Cancel</a>
-            </td>
-        </tr>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for msg in messages %}
+        <div class="alert alert-success alert-custom alert-dismissible fade show mb-4 d-flex align-items-center gap-2"
+            role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>{{ msg }}</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
         {% endfor %}
-    </table>
+        {% endif %}
+        {% endwith %}
 
-    <a href="/dashboard" class="btn btn-primary">Back</a>
-</div>
+        <div class="card card-modern overflow-hidden">
+            {% if appointments|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Booking ID</th>
+                            <th>Specialist Doctor</th>
+                            <th>Appointment Date</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                        <tr>
+                            <td class="ps-4 fw-semibold text-muted">#{{ appt[0] }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="stat-icon"
+                                        style="width: 36px; height: 36px; font-size: 1rem; background-color: var(--primary-light); color: var(--primary);">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                    <span class="fw-bold text-dark">{{ appt[2] }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-3 py-2 fw-semibold">
+                                    <i class="bi bi-calendar3 me-1 text-primary"></i> {{ appt[3] }}
+                                </span>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2">
+                                    <i class="bi bi-check-circle me-1"></i> Confirmed
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="/delete_appointment/{{ appt[0] }}"
+                                    onclick="return confirm('Are you sure you want to cancel this appointment with {{ appt[2] }} on {{ appt[3] }}?');"
+                                    class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                    <i class="bi bi-x-circle me-1"></i> Cancel
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-3 text-muted" style="font-size: 3rem;">
+                    <i class="bi bi-calendar-x"></i>
+                </div>
+                <h5 class="fw-bold text-dark">No Appointments Found</h5>
+                <p class="text-muted small">You haven't booked any medical appointments yet.</p>
+                <a href="/dashboard" class="btn btn-brand rounded-pill px-4 mt-2">
+                    Browse Available Doctors
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 
+    <!-- FOOTER -->
+    <footer class="footer-custom py-3 text-center small text-secondary">
+        Smart Hospital System &copy; 2026. Patient Records & Appointment Management.
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
-<table class="table table-bordered shadow">
-        <thead class="table-primary">
-            <tr>
-                <th>ID</th>
-                <th>Doctor</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for appt in appointments %}
-            <tr>
-                <td>{{ appt[0] }}</td>
-                <td>{{ appt[2] }}</td>
-                <td>{{ appt[3] }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 
-</div>
-
-</body>
 </html>

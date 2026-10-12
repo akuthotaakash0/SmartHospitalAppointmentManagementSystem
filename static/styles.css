@@ -1,16 +1,231 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --primary: #0284c7;
+  --primary-dark: #0369a1;
+  --primary-light: #e0f2fe;
+  --primary-glow: rgba(2, 132, 199, 0.35);
+  
+  --accent: #0d9488;
+  --accent-light: #ccfbf1;
+  --gradient-brand: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+  --gradient-dark: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --gradient-hero: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.82) 100%);
+  
+  --bg-page: #f8fafc;
+  --card-bg: #ffffff;
+  --card-border: rgba(226, 232, 240, 0.9);
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --text-light: #f8fafc;
+  
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 20px 30px -10px rgba(15, 23, 42, 0.12), 0 10px 15px -5px rgba(15, 23, 42, 0.06);
+  --shadow-glow: 0 0 25px var(--primary-glow);
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-    font-family: Arial;
-    text-align: center;
-    background-color: #f4f4f4;
+  font-family: var(--font-main);
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
 }
 
-form {
-    margin: 20px;
+h1, h2, h3, h4, h5, h6, .brand-font {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }
 
-button {
-    padding: 5px 10px;
-    background-color: blue;
-    color: white;
-    border: none;
+/* --------------------
+   Modern Navbar
+   -------------------- */
+.navbar-custom {
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.9rem 1rem;
+}
+
+.navbar-brand-custom {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+}
+
+.navbar-brand-icon {
+  background: var(--gradient-brand);
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.4);
+}
+
+/* --------------------
+   Glassmorphic & Solid Cards
+   -------------------- */
+.card-modern {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.card-modern:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(2, 132, 199, 0.3);
+}
+
+.card-glass {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* --------------------
+   Form Controls
+   -------------------- */
+.form-control-modern {
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+.form-control-modern:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+  outline: none;
+}
+
+.form-label-modern {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* --------------------
+   Buttons
+   -------------------- */
+.btn-brand {
+  background: var(--gradient-brand);
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.4rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+}
+
+.btn-brand:hover {
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);
+}
+
+.btn-brand-outline {
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  background: transparent;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 0.7rem 1.3rem;
+  transition: all 0.2s ease;
+}
+
+.btn-brand-outline:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+/* --------------------
+   Pills & Badges
+   -------------------- */
+.badge-specialty {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+}
+
+.stat-card {
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+/* --------------------
+   Alerts & Notifications
+   -------------------- */
+.alert-custom {
+  border-radius: var(--radius-md);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  font-weight: 500;
+  padding: 1rem 1.25rem;
+}
+
+/* --------------------
+   Footer
+   -------------------- */
+.footer-custom {
+  margin-top: auto;
+  padding: 2rem 0;
+  background-color: #0f172a;
+  color: #94a3b8;
+  font-size: 0.875rem;
 }

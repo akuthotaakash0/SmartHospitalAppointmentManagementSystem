@@ -1,48 +1,140 @@
-# Hospital CSV Project – Google OAuth Setup
+# 🏥 Smart Hospital Appointment Management System
 
-This project uses Flask and a simple CSV-backed user store. I added Google OAuth (Authlib) support.
+A full-stack healthcare web application built with **Flask**, **Pandas**, and **Bootstrap 5**, providing a patient scheduling system, doctor directory, real-time in-app and email notifications, and an administrative control panel.
 
-Quick setup (Windows / PowerShell):
+---
 
-1. Install dependencies:
+## ✨ Features
 
-```powershell
+- **Patient Portal**:
+  - Secure patient registration and authentication with cryptographic password hashing (`werkzeug.security`).
+  - Specialist doctor directory (Cardiology, Dermatology, Orthopedics, Gynecology, Dentistry, etc.).
+  - Appointment scheduling with automatic date validation.
+  - Appointment history view with status tracking and patient-initiated appointment cancellation.
+  - In-app notification alerts with one-click dismissal.
+  - Automatic email notifications for account welcome, appointment booking, and cancellations.
+
+- **Admin Control Panel**:
+  - Protected admin portal with session authentication.
+  - Doctor management: Add new specialists, edit doctor details, and remove doctors.
+  - Centralized appointments dashboard with administrative cancellation capabilities (automatically alerts patient via in-app and email notification).
+  - Admin master password update interface.
+
+- **Cloud & Serverless Ready**:
+  - Vercel Serverless Function entrypoint (`api/index.py`) and configuration (`vercel.json`).
+  - Dynamic `DATA_DIR` path resolution for read-only serverless filesystems (`/tmp`).
+  - Automatic seed initialization for zero-config deployments.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Python 3.9+ installed
+- Git
+
+### 2. Installation
+Clone the repository and install required packages:
+```bash
+git clone https://github.com/akuthotaakash0/SmartHospitalAppointmentManagementSystem.git
+cd SmartHospitalAppointmentManagementSystem
 pip install -r requirements.txt
 ```
 
-2. Create a Google OAuth 2.0 Client ID:
-   - Go to Google Cloud Console → APIs & Services → Credentials → Create Credentials → OAuth client ID
-   - Application type: Web application
-   - Authorized redirect URI: `http://localhost:5000/google_callback`
-   - Copy the Client ID and Client secret
+### 3. Environment Variables (Optional)
+Copy `.env.example` to `.env` to configure email alerts or customize secrets:
+```env
+SECRET_KEY=your-random-secret-key
+FLASK_DEBUG=False
 
-3. Create a `.env` file in the project root (you can copy `.env.example`):
-
+# Email Configuration (Optional - simulated in console if not set)
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=your-hospital-email@gmail.com
+MAIL_PASSWORD=your-gmail-app-password
+MAIL_DEFAULT_SENDER=noreply@hospital.com
 ```
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
-SECRET_KEY=some-secret
-```
 
-4. Run the app:
-
-```powershell
+### 4. Run Locally
+```bash
 python app.py
 ```
- 
- Dev helper — auto-open Google OAuth for testing
- 
- Set `OPEN_GOOGLE_TEST=1` (or add it to your `.env`) to automatically open the OAuth flow in your browser when the server starts:
- 
- ```powershell
-# temporary for session
-$env:OPEN_GOOGLE_TEST=1
-python app.py
+Visit `http://localhost:5000` in your web browser.
+
+**Default Administrator Credentials**:
+- **Username / Email**: `admin` or `admin@hospital.com`
+- **Password**: `admin123`
+
+---
+
+## 🧪 Running Automated Tests
+
+Run the complete test suite with Python's built-in unittest framework:
+```bash
+python -m unittest discover tests
 ```
 
-Notes:
-- The app will load environment variables from `.env` automatically.
-- If you prefer environment variables globally, use `setx` or set them in your host environment.
-- OAuth users are created in `users.csv` with an empty password field.
+Tests cover:
+- Home & health check routes
+- User registration & path resolution across directories
+- Duplicate email prevention
+- Authentication & protected route redirects
+- Appointment booking & patient cancellation workflow
+- Admin doctor CRUD & administrative appointment cancellation
 
-If you want, I can also add stricter checks (e.g., require verified email or restrict registration by domain).
+---
+
+## ☁️ Deployment Guide
+
+### Deploying to GitHub
+```bash
+git add .
+git commit -m "Complete Smart Hospital Management System with Vercel deployment configuration"
+git push origin main
+```
+
+### Deploying to Vercel
+1. Go to [vercel.com](https://vercel.com) and log in.
+2. Click **"Add New Project"** and select **"Import Git Repository"**.
+3. Choose the `SmartHospitalAppointmentManagementSystem` repository.
+4. Framework Preset: **Other** (Vercel automatically detects `vercel.json` and `api/index.py`).
+5. (Optional) Under **Environment Variables**, add:
+   - `SECRET_KEY`
+   - `MAIL_USERNAME` (optional)
+   - `MAIL_PASSWORD` (optional)
+6. Click **Deploy**. Vercel will build and host the application globally.
+
+---
+
+## 📁 Project Structure
+
+```
+├── api/
+│   └── index.py             # Vercel serverless WSGI entrypoint
+├── static/
+│   ├── hospital.jpg         # Hospital banner image
+│   └── styles.css           # Healthcare design system & custom CSS
+├── templates/
+│   ├── index.html           # Landing page
+│   ├── login.html           # User login portal
+│   ├── register.html        # Patient registration
+│   ├── dashboard.html       # Patient dashboard & specialists
+│   ├── book.html            # Appointment booking
+│   ├── history.html         # Patient appointment history
+│   ├── admin_login.html     # Admin authentication
+│   ├── admin_dashboard.html # Admin control center
+│   ├── change_admin_password.html
+│   └── edit_doctor.html     # Doctor editing form
+├── tests/
+│   ├── test_registration.py # Working directory & registration tests
+│   └── test_app.py          # End-to-end integration test suite
+├── app.py                   # Main Flask application & routes
+├── appointments.csv         # Appointments database
+├── doctors.csv              # Doctors database
+├── notifications.csv        # Notifications database
+├── users.csv                # Users & admin credentials database
+├── requirements.txt         # Python dependencies
+├── vercel.json              # Vercel routing configuration
+└── README.md                # Documentation
+```

@@ -1,24 +1,89 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Doctor</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+<html lang="en">
 
-<div class="container mt-5 col-md-5">
-    <div class="card shadow">
-        <div class="card-body">
-            <h4>Edit Doctor</h4>
-            <form method="POST">
-                <input name="name" value="{{ doctor[1] }}" class="form-control mb-3">
-                <input name="specialization" value="{{ doctor[2] }}" class="form-control mb-3">
-                <input name="image" value="{{ doctor[3] }}" class="form-control mb-3">
-                <button class="btn btn-primary w-100">Update</button>
-            </form>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Doctor Details — Smart Hospital Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body class="bg-light d-flex flex-column min-vh-100 justify-content-between">
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand navbar-brand-custom" href="/admin_dashboard">
+                <span class="navbar-brand-icon"
+                    style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);"><i
+                        class="bi bi-shield-lock"></i></span>
+                Admin Panel
+            </a>
+            <a href="/admin_dashboard" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Dashboard
+            </a>
+        </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card card-modern p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <div class="navbar-brand-icon mx-auto mb-3"
+                            style="width: 52px; height: 52px; font-size: 1.5rem;">
+                            <i class="bi bi-pencil-square text-white"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark">Edit Specialist Details</h4>
+                        <p class="text-muted small">Update profile for Doctor #{{ doctor[0] }}</p>
+                    </div>
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label form-label-modern">Doctor Full Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                        class="bi bi-person"></i></span>
+                                <input type="text" name="name" value="{{ doctor[1] }}"
+                                    class="form-control form-control-modern border-start-0 ps-0" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label form-label-modern">Medical Specialization</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                        class="bi bi-award"></i></span>
+                                <input type="text" name="specialization" value="{{ doctor[2] }}"
+                                    class="form-control form-control-modern border-start-0 ps-0" required>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-brand py-2">
+                                <i class="bi bi-check2 me-1"></i> Save Changes
+                            </button>
+                            <a href="/admin_dashboard" class="btn btn-outline-secondary py-2 rounded-pill">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
+    <!-- FOOTER -->
+    <footer class="footer-custom py-3 text-center small text-secondary">
+        Smart Hospital System &copy; 2026. Specialist Management Portal.
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

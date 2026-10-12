@@ -1,6 +1,6 @@
-id,name,specialization,Unnamed: 3
-1,Dr. Sharma,Cardiologist,
-2,Dr. Reddy,Dermatologist,
-3,Dr. Kumar,Orthopedic,
-4,Dr. Kavya,Gynecologist,
-5,Dr. Rahul,Dentist,
+id,name,specialization
+1,Dr. Sharma,Cardiologist
+2,Dr. Reddy,Dermatologist
+3,Dr. Kumar,Orthopedic
+4,Dr. Kavya,Gynecologist
+5,Dr. Rahul,Dentist

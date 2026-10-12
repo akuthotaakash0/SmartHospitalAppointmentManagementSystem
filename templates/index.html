@@ -1,133 +1,209 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Smart Hospital</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Hospital — Online Appointment & Healthcare Management</title>
+    <meta name="description"
+        content="Book specialist doctors, manage appointments, and track your healthcare schedule seamlessly with Smart Hospital.">
+    <!-- Google Fonts & Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
-        /* HERO BACKGROUND */
-        .hero-section {
-            height: 100vh;
-            background:
-                linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
-                url("https://images.unsplash.com/photo-1586773860418-d37222d8fce3");
+        .hero-wrapper {
+            position: relative;
+            min-height: 85vh;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(2, 132, 199, 0.75) 100%),
+            url("{{ url_for('static', filename='hospital.jpg') }}");
             background-size: cover;
             background-position: center;
-            color: white;
             display: flex;
-            flex-direction: column;
-            animation: fadeIn 2s ease-in-out;
-        }
-
-        /* Fade Animation */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Navbar */
-        .navbar {
-            background: rgba(0,0,0,0.85) !important;
-        }
-
-        /* Hero content */
-        .hero-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            text-align: center;
-            animation: fadeUp 2s ease-in-out;
-        }
-
-        /* Slide Up Animation */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(40px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Typing Effect */
-        .typing {
-            border-right: 3px solid white;
-            white-space: nowrap;
+            color: #ffffff;
             overflow: hidden;
-            animation: typing 4s steps(40, end),
-                       blink 0.7s infinite;
         }
 
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
-
-        @keyframes blink {
-            50% { border-color: transparent }
-        }
-
-        /* Animated Buttons */
-        .btn-custom {
-            padding: 10px 30px;
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
             border-radius: 30px;
-            transition: 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.25);
         }
 
-        .btn-custom:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(255,255,255,0.6);
+        .feature-card {
+            border-radius: var(--radius-lg);
+            background: #ffffff;
+            padding: 2rem 1.5rem;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s ease;
+            height: 100%;
         }
 
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+        }
+
+        .feature-icon-box {
+            width: 58px;
+            height: 58px;
+            border-radius: 14px;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin-bottom: 1.25rem;
+        }
     </style>
 </head>
 
 <body>
 
-<div class="hero-section">
-
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
         <div class="container">
-            <span class="navbar-brand fw-bold">🏥 Smart Hospital</span>
+            <a class="navbar-brand navbar-brand-custom" href="/">
+                <span class="navbar-brand-icon"><i class="bi bi-hospital"></i></span>
+                Smart Hospital
+            </a>
 
-            <div>
-                <a href="/login" class="btn btn-outline-light btn-sm me-2">Login</a>
-                <a href="/register" class="btn btn-warning btn-sm me-2">Register</a>
-                <a href="/admin" class="btn btn-danger btn-sm">Admin</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="mainNav">
+                <ul class="navbar-nav align-items-center gap-2">
+                    {% if session.get('user') %}
+                    <li class="nav-item">
+                        <a href="/dashboard" class="btn btn-outline-light btn-sm px-3 rounded-pill">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/history" class="btn btn-outline-light btn-sm px-3 rounded-pill">My Appointments</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/logout" class="btn btn-danger btn-sm px-3 rounded-pill">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a href="/login" class="btn btn-outline-light btn-sm px-3 rounded-pill">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/register" class="btn btn-brand btn-sm px-3 rounded-pill">Register</a>
+                    </li>
+                    <li class="nav-item ms-lg-2">
+                        <a href="/admin" class="btn btn-dark btn-sm px-3 rounded-pill border border-secondary">
+                            <i class="bi bi-shield-lock me-1"></i> Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
             </div>
         </div>
     </nav>
 
-    <!-- HERO CONTENT -->
-    <div class="hero-content">
-
-        <h1 class="display-3 fw-bold typing">
-            Welcome to Smart Hospital
-        </h1>
-
-        <p class="lead mt-3">
-            Online Appointment Booking & Management System
-        </p>
-
-        <div class="mt-4">
-            <a href="/register" class="btn btn-primary btn-custom me-3">
-                Get Started
-            </a>
-
-            <a href="/admin" class="btn btn-dark btn-custom">
-                Admin Panel
-            </a>
+    <!-- HERO SECTION -->
+    <section class="hero-wrapper">
+        <div class="container py-5">
+            <div class="row align-items-center">
+                <div class="col-lg-8 text-center text-lg-start">
+                    <div class="hero-badge">
+                        <i class="bi bi-patch-check-fill text-warning"></i> Trusted Smart Healthcare Portal
+                    </div>
+                    <h1 class="display-4 fw-bold mb-3" style="font-family: var(--font-heading); line-height: 1.15;">
+                        Your Health, Our Priority.<br>Seamless Doctor Appointments.
+                    </h1>
+                    <p class="lead mb-4 text-light" style="max-width: 650px; opacity: 0.95;">
+                        Experience modern hospital care. Consult top cardiologists, dermatologists, orthopedic
+                        specialists, and gynecologists with instant online scheduling and instant confirmations.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                        <a href="/register" class="btn btn-brand btn-lg rounded-pill px-4">
+                            <i class="bi bi-calendar-check me-2"></i> Book Appointment Now
+                        </a>
+                        <a href="/login" class="btn btn-light btn-lg rounded-pill px-4 text-dark fw-semibold">
+                            Patient Portal
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
+    </section>
 
-    </div>
+    <!-- FEATURES SECTION -->
+    <section class="py-5 bg-white">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <span class="text-primary fw-bold text-uppercase small tracking-wide">Why Choose Us</span>
+                <h2 class="fw-bold mt-1" style="font-family: var(--font-heading);">Designed For Better Patient Care</h2>
+                <p class="text-muted">Effortless appointment booking with real-time updates and notification alerts.</p>
+            </div>
 
-</div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card text-center text-md-start">
+                        <div class="feature-icon-box">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Verified Specialists</h4>
+                        <p class="text-muted mb-0">Browse certified physicians across multiple disciplines including
+                            Cardiology, Dermatology, Orthopedics, and more.</p>
+                    </div>
+                </div>
 
+                <div class="col-md-4">
+                    <div class="feature-card text-center text-md-start">
+                        <div class="feature-icon-box"
+                            style="background-color: var(--accent-light); color: var(--accent);">
+                            <i class="bi bi-bell"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Real-Time Alerts</h4>
+                        <p class="text-muted mb-0">Get instant email notifications and in-app updates regarding
+                            appointment confirmations, cancellations, or reschedules.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="feature-card text-center text-md-start">
+                        <div class="feature-icon-box" style="background-color: #fef3c7; color: #d97706;">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Secure & Private</h4>
+                        <p class="text-muted mb-0">Your records and bookings are handled securely with industry-standard
+                            cryptographic password hashing and privacy protection.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer-custom">
+        <div class="container text-center">
+            <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                <span class="navbar-brand-icon" style="width: 28px; height: 28px; font-size: 0.9rem;"><i
+                        class="bi bi-hospital text-white"></i></span>
+                <strong class="text-white">Smart Hospital Management System</strong>
+            </div>
+            <p class="mb-0 text-secondary">&copy; 2026 Smart Hospital. All rights reserved. Providing compassionate care
+                and modern healthcare technology.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
