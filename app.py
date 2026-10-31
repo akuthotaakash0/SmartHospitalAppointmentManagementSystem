@@ -8,6 +8,15 @@ from flask_mail import Mail, Message
 import pandas as pd
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# Clerk authentication (gracefully disabled if CLERK_SECRET_KEY is not set)
+try:
+    from clerk_auth import verify_clerk_request, clerk_login_required
+    CLERK_ENABLED = bool(os.environ.get("CLERK_SECRET_KEY"))
+except ImportError:
+    CLERK_ENABLED = False
+    def verify_clerk_request(): return None
+    def clerk_login_required(f): return f
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -36,6 +45,7 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static")
 )
 app.secret_key = os.environ.get("SECRET_KEY", "smart_hospital_super_secret_key_2026")
+app.config["CLERK_PUBLISHABLE_KEY"] = os.environ.get("CLERK_PUBLISHABLE_KEY", "")
 
 # --------------------
 # Email Configuration
@@ -212,7 +222,101 @@ def send_email(recipient_email, subject, body):
 # --------------------
 @app.route('/')
 def index():
-    return render_template("index.html")
+    return render_template("index.html", clerk_publishable_key=app.config.get("CLERK_PUBLISHABLE_KEY", ""))
+
+
+# --------------------
+# CLERK SESSION SYNC
+# --------------------
+@app.route('/clerk_sync', methods=['POST'])
+def clerk_sync():
+    """
+    Called by ClerkJS on the frontend after a successful sign-in.
+    Accepts the session token, verifies it server-side via Clerk SDK,
+    and populates the Flask server-side session so protected routes work.
+    """
+    if not CLERK_ENABLED:
+        return jsonify({"ok": False, "error": "Clerk is not configured"}), 400
+
+    user_info = verify_clerk_request()
+    if not user_info:
+        return jsonify({"ok": False, "error": "Invalid or missing Clerk session"}), 401
+
+    # Sync into Flask session
+    session["user"] = user_info["name"]
+    session["email"] = user_info["email"]
+    session["clerk_user_id"] = user_info["user_id"]
+
+    # Auto-register Clerk user in users.csv if not already present
+    if user_info.get("email"):
+        users = get_users_df()
+        email_lower = user_info["email"].lower()
+        if users.empty or email_lower not in users["email"].astype(str).str.lower().values:
+            new_id = 1 if users.empty or "id" not in users.columns else (
+                1 if pd.isna(users["id"].max()) else int(users["id"].max()) + 1
+            )
+            new_user = {
+                "id": new_id,
+                "name": user_info["name"],
+                "email": user_info["email"],
+                "password": ""  # No password needed for Clerk users
+            }
+            users = pd.concat([users, pd.DataFrame([new_user])], ignore_index=True)
+            save_users_df(users)
+
+    return jsonify({"ok": True, "redirect": url_for("dashboard")})
+
+
+# --------------------
+# CLERK REDIRECT SIGN-IN
+# --------------------
+@app.route('/clerk_signin_redirect')
+def clerk_signin_redirect():
+    """
+    Redirect to Clerk's hosted sign-in page.
+    Works from any origin — no allowlist configuration needed.
+    After sign-in, Clerk redirects back to /clerk_callback.
+    """
+    pk = app.config.get("CLERK_PUBLISHABLE_KEY", "")
+    if not pk:
+        flash("Clerk is not configured. Please use the form below.")
+        return redirect(url_for("login"))
+
+    # Extract the Clerk frontend API domain from the publishable key
+    # pk_test_<base64-encoded-frontend-api> or pk_live_<...>
+    # The hosted sign-in URL pattern: https://accounts.<clerk-domain>.clerk.accounts.dev/sign-in
+    # Simpler: use the Clerk JS URL which Clerk injects automatically
+    # We'll build the sign-in URL from the key prefix
+    import base64
+    try:
+        # The publishable key encodes the frontend API URL after the prefix
+        prefix, encoded = pk.rsplit("_", 1)  # e.g. pk_test | <encoded>
+        # Clerk encodes the frontend API URL in base64 (with $ suffix appended before encoding)
+        padded = encoded + "=" * (-len(encoded) % 4)
+        frontend_api = base64.b64decode(padded).decode("utf-8").rstrip("$")
+        # Build the hosted sign-in URL
+        callback_url = request.host_url.rstrip("/") + url_for("clerk_callback")
+        sign_in_url = f"https://{frontend_api}/sign-in?redirect_url={callback_url}"
+        return redirect(sign_in_url)
+    except Exception as e:
+        print(f"[Clerk] Could not build sign-in URL: {e}")
+        flash("Could not redirect to Clerk. Please use the form below.")
+        return redirect(url_for("login"))
+
+
+@app.route('/clerk_callback')
+def clerk_callback():
+    """
+    Handles the redirect back from Clerk's hosted sign-in page.
+    Clerk appends a __clerk_status and __clerk_db_jwt_key to the URL.
+    We use ClerkJS briefly here to get the session and sync to Flask.
+    """
+    pk = app.config.get("CLERK_PUBLISHABLE_KEY", "")
+    return render_template("clerk_callback.html",
+                           clerk_publishable_key=pk)
+
+
+
 
 
 # --------------------
@@ -273,7 +377,7 @@ Smart Hospital Management Team
         flash("Registration successful! Check your email for confirmation.")
         return redirect(url_for('login'))
 
-    return render_template("register.html")
+    return render_template("register.html", clerk_publishable_key=app.config.get("CLERK_PUBLISHABLE_KEY", ""))
 
 
 # --------------------
@@ -299,7 +403,7 @@ def login():
         flash("Invalid credentials! Please check your email and password.")
         return redirect(url_for('login'))
 
-    return render_template("login.html")
+    return render_template("login.html", clerk_publishable_key=app.config.get("CLERK_PUBLISHABLE_KEY", ""))
 
 
 # --------------------
@@ -488,7 +592,9 @@ def dismiss_notification(id):
 def logout():
     session.pop('user', None)
     session.pop('email', None)
+    session.pop('clerk_user_id', None)
     flash("You have been logged out successfully.")
+    # For Clerk: the frontend ClerkJS will also clear its session cookie
     return redirect(url_for('index'))
 
 

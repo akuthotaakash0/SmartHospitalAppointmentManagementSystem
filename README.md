@@ -1,6 +1,6 @@
 # 🏥 Smart Hospital Appointment Management System
 
-A full-stack healthcare web application built with **Flask**, **Pandas**, and **Bootstrap 5**, providing a patient scheduling system, doctor directory, real-time in-app and email notifications, and an administrative control panel.
+A full-stack healthcare web application built with **Flask**, **Pandas**, and **Bootstrap 5**, featuring **Clerk authentication**, a patient scheduling system, doctor directory, real-time in-app and email notifications, and an administrative control panel.
 
 ---
 
@@ -8,6 +8,7 @@ A full-stack healthcare web application built with **Flask**, **Pandas**, and **
 
 - **Patient Portal**:
   - Secure patient registration and authentication with cryptographic password hashing (`werkzeug.security`).
+  - **Clerk SSO integration** — sign in/sign up with Google, GitHub, email, or magic links via [Clerk](https://clerk.com). Falls back to classic email/password when Clerk is not configured.
   - Specialist doctor directory (Cardiology, Dermatology, Orthopedics, Gynecology, Dentistry, etc.).
   - Appointment scheduling with automatic date validation.
   - Appointment history view with status tracking and patient-initiated appointment cancellation.
@@ -42,10 +43,16 @@ pip install -r requirements.txt
 ```
 
 ### 3. Environment Variables (Optional)
-Copy `.env.example` to `.env` to configure email alerts or customize secrets:
+Copy `.env.example` to `.env` to configure authentication, email alerts, or customize secrets:
 ```env
 SECRET_KEY=your-random-secret-key
 FLASK_DEBUG=False
+
+# Clerk Authentication (Optional — classic login works without it)
+# Get keys from https://dashboard.clerk.com → Your App → API Keys
+CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
+CLERK_SECRET_KEY=sk_test_xxxxx
+CLERK_AUTHORIZED_PARTIES=http://localhost:5000,https://your-app.vercel.app
 
 # Email Configuration (Optional - simulated in console if not set)
 MAIL_SERVER=smtp.gmail.com
@@ -55,6 +62,8 @@ MAIL_USERNAME=your-hospital-email@gmail.com
 MAIL_PASSWORD=your-gmail-app-password
 MAIL_DEFAULT_SENDER=noreply@hospital.com
 ```
+
+> **Note:** If `CLERK_SECRET_KEY` is not set, the app runs in "legacy" mode with only email/password auth. The Clerk "Sign in with Clerk" button only appears when the publishable key is configured.
 
 ### 4. Run Locally
 ```bash
@@ -101,6 +110,9 @@ git push origin main
 4. Framework Preset: **Other** (Vercel automatically detects `vercel.json` and `api/index.py`).
 5. (Optional) Under **Environment Variables**, add:
    - `SECRET_KEY`
+   - `CLERK_PUBLISHABLE_KEY` (optional — enables Clerk SSO)
+   - `CLERK_SECRET_KEY` (optional — enables Clerk SSO)
+   - `CLERK_AUTHORIZED_PARTIES` (set to your Vercel URL, e.g. `https://your-app.vercel.app`)
    - `MAIL_USERNAME` (optional)
    - `MAIL_PASSWORD` (optional)
 6. Click **Deploy**. Vercel will build and host the application globally.
@@ -117,8 +129,9 @@ git push origin main
 │   └── styles.css           # Healthcare design system & custom CSS
 ├── templates/
 │   ├── index.html           # Landing page
-│   ├── login.html           # User login portal
-│   ├── register.html        # Patient registration
+│   ├── login.html           # User login portal (+ Clerk SSO)
+│   ├── register.html        # Patient registration (+ Clerk sign-up)
+│   ├── clerk_callback.html  # Clerk OAuth callback handler
 │   ├── dashboard.html       # Patient dashboard & specialists
 │   ├── book.html            # Appointment booking
 │   ├── history.html         # Patient appointment history
@@ -130,6 +143,7 @@ git push origin main
 │   ├── test_registration.py # Working directory & registration tests
 │   └── test_app.py          # End-to-end integration test suite
 ├── app.py                   # Main Flask application & routes
+├── clerk_auth.py            # Clerk backend JWT verification & helpers
 ├── appointments.csv         # Appointments database
 ├── doctors.csv              # Doctors database
 ├── notifications.csv        # Notifications database

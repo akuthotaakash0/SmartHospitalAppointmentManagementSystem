@@ -4,3 +4,4 @@ werkzeug
 python-dotenv
 gunicorn
 Flask-Mail
+clerk-backend-api
