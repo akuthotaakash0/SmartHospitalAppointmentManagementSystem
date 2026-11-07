@@ -223,23 +223,32 @@ def format_doctor_name(name):
 
 
 # --------------------
-# Email Helper Function
+# Email Helper Function (Async Background Worker)
 # --------------------
+def _send_email_async(app_obj, recipient_email, subject, body):
+    with app_obj.app_context():
+        try:
+            if not app_obj.config.get('MAIL_USERNAME') or not app_obj.config.get('MAIL_PASSWORD'):
+                print(f"[Email Sim] To: {recipient_email} | Subject: {subject}")
+                return
+            msg = Message(subject=subject, recipients=[recipient_email], body=body)
+            mail.send(msg)
+            print(f"[Email Sent] To: {recipient_email} | Subject: {subject}")
+        except Exception as e:
+            print(f"[Email Error] Failed to send email to {recipient_email}: {str(e)}")
+
+
 def send_email(recipient_email, subject, body):
-    """Send email notification safely without crashing on missing config or network failure."""
+    """Send email asynchronously in a background thread so it never delays HTTP responses."""
     if not recipient_email:
         return False
     try:
-        if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
-            print(f"[Email Sim] To: {recipient_email} | Subject: {subject}")
-            return False
-
-        msg = Message(subject=subject, recipients=[recipient_email], body=body)
-        mail.send(msg)
-        print(f"[Email Sent] To: {recipient_email} | Subject: {subject}")
+        t = threading.Thread(target=_send_email_async, args=(app, recipient_email, subject, body))
+        t.daemon = True
+        t.start()
         return True
     except Exception as e:
-        print(f"[Email Error] Failed to send email to {recipient_email}: {str(e)}")
+        print(f"[Email Thread Error] {e}")
         return False
 
 
