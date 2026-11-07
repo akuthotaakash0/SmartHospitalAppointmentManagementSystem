@@ -55,13 +55,20 @@
                     {% endwith %}
 
                     {% if clerk_publishable_key %}
-                    <!-- Clerk Sign-In Option -->
-                    <div class="mb-3">
-                        <button type="button" class="btn btn-brand w-100 py-2 shadow-sm" id="clerk-signin-btn" onclick="openClerkSignIn()">
-                            <i class="bi bi-shield-lock me-2"></i> Sign in with Clerk
-                        </button>
+                    <!-- Embedded Clerk Sign-In Widget -->
+                    <div id="clerk-sign-in-mount" class="mb-3"></div>
+                    <div id="clerk-loading" class="text-center py-3 text-muted small">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        Loading secure sign-in…
                     </div>
-                    <div class="text-center text-muted small my-2">— or sign in with email —</div>
+
+                    <div class="text-center mt-3 pt-2 border-top">
+                        <a class="text-muted small text-decoration-none" data-bs-toggle="collapse" href="#classicLoginForm" role="button" aria-expanded="false" aria-controls="classicLoginForm">
+                            <i class="bi bi-chevron-down me-1"></i> Or sign in with email & password
+                        </a>
+                    </div>
+
+                    <div class="collapse mt-3" id="classicLoginForm">
                     {% endif %}
                     <!-- Classic Flask Login Form -->
                     <form method="POST" action="/login">
@@ -95,6 +102,9 @@
                             <i class="bi bi-box-arrow-in-right me-1"></i> Login
                         </button>
                     </form>
+                    {% if clerk_publishable_key %}
+                    </div>
+                    {% endif %}
 
                     <div class="text-center mt-4 pt-2 border-top">
                         <p class="text-muted small mb-1">
@@ -117,6 +127,7 @@
         Smart Hospital System &copy; 2026. Secure Patient Portal.
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function togglePassword() {
             var pass = document.getElementById("password");
@@ -137,36 +148,41 @@
     <!-- ClerkJS official CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
     <script>
-        let clerkInstance = null;
-
         async function initClerk() {
             if (!window.__clerk_publishable_key) return;
+            const loadingEl = document.getElementById("clerk-loading");
+            const mountEl = document.getElementById("clerk-sign-in-mount");
             try {
-                clerkInstance = new window.Clerk(window.__clerk_publishable_key);
-                await clerkInstance.load();
+                const clerk = new window.Clerk(window.__clerk_publishable_key);
+                await clerk.load();
+
+                if (loadingEl) loadingEl.style.display = "none";
 
                 // If already signed in, sync immediately
-                if (clerkInstance.session) {
-                    await syncSession(clerkInstance);
+                if (clerk.session) {
+                    await syncSession(clerk);
                     return;
                 }
 
-                clerkInstance.addListener(async ({ session }) => {
-                    if (session) await syncSession(clerkInstance);
+                // Mount Clerk Sign-In component directly on the page
+                if (mountEl) {
+                    clerk.mountSignIn(mountEl, {
+                        afterSignInUrl: "/dashboard",
+                        signUpUrl: "/register"
+                    });
+                }
+
+                // Listen for completed sign-in
+                clerk.addListener(async ({ session }) => {
+                    if (session) await syncSession(clerk);
                 });
             } catch (e) {
                 console.error("[Clerk] init error:", e);
-            }
-        }
-
-        async function openClerkSignIn() {
-            if (clerkInstance) {
-                clerkInstance.openSignIn({
-                    afterSignInUrl: "/dashboard",
-                    signUpUrl: "/register"
-                });
-            } else {
-                window.location.href = "/clerk_signin_redirect";
+                if (loadingEl) {
+                    loadingEl.innerHTML = '<span class="text-muted small">Use the form below to sign in:</span>';
+                }
+                const classicForm = document.getElementById("classicLoginForm");
+                if (classicForm) classicForm.classList.add("show");
             }
         }
 

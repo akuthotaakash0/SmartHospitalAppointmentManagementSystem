@@ -325,7 +325,11 @@ def clerk_signin_redirect():
         accounts_domain = frontend_api.replace(".clerk.accounts.dev", ".accounts.dev")
         callback_url = request.host_url.rstrip("/") + url_for("clerk_callback")
         sign_in_url = f"https://{accounts_domain}/sign-in?redirect_url={urllib.parse.quote(callback_url, safe='')}"
-        return redirect(sign_in_url)
+        resp = redirect(sign_in_url)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     except Exception as e:
         print(f"[Clerk] Could not build sign-in URL: {e}")
         flash("Could not redirect to Clerk. Please use the form below.")
