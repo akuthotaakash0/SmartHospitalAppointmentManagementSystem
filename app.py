@@ -303,6 +303,68 @@ def clerk_sync():
 
 
 # --------------------
+# DIRECT GOOGLE SIGN-IN
+# --------------------
+@app.route('/google_login')
+def google_login():
+    """
+    Directly initiate Google OAuth sign-in.
+    Fetches the Google account chooser authorization URL from Clerk
+    and redirects the user directly to Google account selection.
+    """
+    pk = app.config.get("CLERK_PUBLISHABLE_KEY", "")
+    if not pk:
+        flash("Google authentication is not configured.")
+        return redirect(url_for("login"))
+
+    import base64
+    import urllib.request
+    import urllib.parse
+    import json
+
+    try:
+        prefix, encoded = pk.rsplit("_", 1)
+        padded = encoded + "=" * (-len(encoded) % 4)
+        frontend_api = base64.b64decode(padded).decode("utf-8").rstrip("$")
+
+        callback_url = request.host_url.rstrip("/") + url_for("clerk_callback")
+        dashboard_url = request.host_url.rstrip("/") + url_for("dashboard")
+
+        post_data = urllib.parse.urlencode({
+            "strategy": "oauth_google",
+            "redirect_url": callback_url,
+            "action_complete_redirect_url": dashboard_url
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            f"https://{frontend_api}/v1/client/sign_ins",
+            data=post_data,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": "SmartHospital/1.0"
+            }
+        )
+
+        with urllib.request.urlopen(req, timeout=5) as response:
+            res_data = json.loads(response.read().decode("utf-8"))
+            google_url = (
+                res_data.get("response", {})
+                .get("first_factor_verification", {})
+                .get("external_verification_redirect_url")
+            )
+            if google_url:
+                resp = redirect(google_url)
+                resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                resp.headers["Pragma"] = "no-cache"
+                return resp
+    except Exception as e:
+        print(f"[Google OAuth Initiator Error] {e}")
+
+    # Fallback to general redirect if direct API call fails
+    return redirect(url_for("clerk_signin_redirect"))
+
+
+# --------------------
 # CLERK REDIRECT SIGN-IN
 # --------------------
 @app.route('/clerk_signin_redirect')

@@ -229,3 +229,20 @@ h1, h2, h3, h4, h5, h6, .brand-font {
   color: #94a3b8;
   font-size: 0.875rem;
 }
+
+/* Google SSO Button */
+#google-signin-btn,
+#google-signup-btn {
+  transition: all 0.2s ease-in-out;
+  border-color: #cbd5e1 !important;
+  font-family: var(--font-main);
+  background-color: #ffffff !important;
+}
+
+#google-signin-btn:hover,
+#google-signup-btn:hover {
+  background-color: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
