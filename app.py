@@ -48,6 +48,19 @@ app.secret_key = os.environ.get("SECRET_KEY", "smart_hospital_super_secret_key_2
 app.config["CLERK_PUBLISHABLE_KEY"] = os.environ.get("CLERK_PUBLISHABLE_KEY", "")
 
 # --------------------
+# Database Initialization (PostgreSQL with SQLite fallback)
+# --------------------
+from database import (
+    init_database,
+    db_get_users, db_save_users,
+    db_get_doctors, db_save_doctors,
+    db_get_appointments, db_save_appointments,
+    db_get_notifications, db_save_notifications,
+    is_db_configured
+)
+init_database(app)
+
+# --------------------
 # Email Configuration
 # --------------------
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
@@ -158,10 +171,14 @@ ensure_files()
 
 
 # --------------------
-# Safe CSV Access Helpers
+# Database & Storage Access Helpers
 # --------------------
 def get_users_df():
     ensure_files()
+    if is_db_configured():
+        db_df = db_get_users()
+        if db_df is not None and not db_df.empty:
+            return db_df
     try:
         return pd.read_csv(USERS_FILE)
     except Exception:
@@ -169,11 +186,20 @@ def get_users_df():
 
 
 def save_users_df(df):
-    df.to_csv(USERS_FILE, index=False)
+    try:
+        df.to_csv(USERS_FILE, index=False)
+    except Exception:
+        pass
+    if is_db_configured():
+        db_save_users(df)
 
 
 def get_doctors_df():
     ensure_files()
+    if is_db_configured():
+        db_df = db_get_doctors()
+        if db_df is not None and not db_df.empty:
+            return db_df
     try:
         df = pd.read_csv(DOCTORS_FILE)
         cols = [c for c in ["id", "name", "specialization"] if c in df.columns]
@@ -184,11 +210,22 @@ def get_doctors_df():
 
 def save_doctors_df(df):
     clean_cols = [c for c in df.columns if not str(c).startswith("Unnamed")]
-    df[clean_cols].to_csv(DOCTORS_FILE, index=False)
+    try:
+        df[clean_cols].to_csv(DOCTORS_FILE, index=False)
+    except Exception:
+        pass
+    if is_db_configured():
+        db_save_doctors(df[clean_cols])
 
 
 def get_appointments_df():
     ensure_files()
+    if is_db_configured():
+        db_df = db_get_appointments()
+        if db_df is not None and not db_df.empty:
+            if "time_slot" not in db_df.columns:
+                db_df["time_slot"] = "09:00 AM - 10:00 AM"
+            return db_df
     try:
         df = pd.read_csv(APPOINTMENTS_FILE)
         if "time_slot" not in df.columns:
@@ -199,11 +236,20 @@ def get_appointments_df():
 
 
 def save_appointments_df(df):
-    df.to_csv(APPOINTMENTS_FILE, index=False)
+    try:
+        df.to_csv(APPOINTMENTS_FILE, index=False)
+    except Exception:
+        pass
+    if is_db_configured():
+        db_save_appointments(df)
 
 
 def get_notifications_df():
     ensure_files()
+    if is_db_configured():
+        db_df = db_get_notifications()
+        if db_df is not None:
+            return db_df
     try:
         return pd.read_csv(NOTIFICATIONS_FILE)
     except Exception:
@@ -211,7 +257,12 @@ def get_notifications_df():
 
 
 def save_notifications_df(df):
-    df.to_csv(NOTIFICATIONS_FILE, index=False)
+    try:
+        df.to_csv(NOTIFICATIONS_FILE, index=False)
+    except Exception:
+        pass
+    if is_db_configured():
+        db_save_notifications(df)
 
 
 def format_doctor_name(name):

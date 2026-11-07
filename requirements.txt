@@ -4,4 +4,6 @@ werkzeug
 python-dotenv
 gunicorn
 Flask-Mail
-clerk-backend-api
+Flask-SQLAlchemy>=3.0.0
+psycopg2-binary>=2.9.0
+pg8000>=1.30.0
