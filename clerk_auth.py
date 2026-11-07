@@ -26,6 +26,12 @@ def get_clerk_authorized_parties():
             "http://localhost:5000",
             "https://smart-hospital-appointment-manageme.vercel.app",
         ]
+    try:
+        current_host = request.host_url.rstrip("/")
+        if current_host and current_host not in parties:
+            parties.append(current_host)
+    except Exception:
+        pass
     return parties
 
 

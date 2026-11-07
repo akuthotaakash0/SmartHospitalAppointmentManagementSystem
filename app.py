@@ -314,15 +314,17 @@ def clerk_signin_redirect():
     # Simpler: use the Clerk JS URL which Clerk injects automatically
     # We'll build the sign-in URL from the key prefix
     import base64
+    import urllib.parse
     try:
         # The publishable key encodes the frontend API URL after the prefix
         prefix, encoded = pk.rsplit("_", 1)  # e.g. pk_test | <encoded>
         # Clerk encodes the frontend API URL in base64 (with $ suffix appended before encoding)
         padded = encoded + "=" * (-len(encoded) % 4)
         frontend_api = base64.b64decode(padded).decode("utf-8").rstrip("$")
-        # Build the hosted sign-in URL
+        # In Clerk development instances (*.clerk.accounts.dev), Account Portal is at *.accounts.dev (without '.clerk')
+        accounts_domain = frontend_api.replace(".clerk.accounts.dev", ".accounts.dev")
         callback_url = request.host_url.rstrip("/") + url_for("clerk_callback")
-        sign_in_url = f"https://{frontend_api}/sign-in?redirect_url={callback_url}"
+        sign_in_url = f"https://{accounts_domain}/sign-in?redirect_url={urllib.parse.quote(callback_url, safe='')}"
         return redirect(sign_in_url)
     except Exception as e:
         print(f"[Clerk] Could not build sign-in URL: {e}")
