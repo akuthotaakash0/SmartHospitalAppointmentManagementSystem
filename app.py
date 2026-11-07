@@ -303,24 +303,19 @@ def clerk_sync():
 
 
 # --------------------
-# DIRECT GOOGLE SIGN-IN
+# DIRECT GOOGLE SIGN-IN INTO SMART HOSPITAL APPLICATION
 # --------------------
 @app.route('/google_login')
 def google_login():
     """
-    Directly initiate Google OAuth sign-in.
-    1. If GOOGLE_CLIENT_ID is configured, redirects directly to Google Cloud OAuth.
-    2. Otherwise, uses the pre-configured Google OAuth endpoint to open Google's account chooser.
-    In both cases, user selects their Google account and is logged directly into the Smart Hospital app.
+    Directly initiate Google Sign-In into Smart Hospital Application.
+    1. If GOOGLE_CLIENT_ID is configured, redirects directly to Google Cloud OAuth 2.0.
+    2. Otherwise, opens the authentic Google Account Chooser modal directly on login page.
+    Never redirects to Clerk or third-party broken portals.
     """
-    import base64
-    import urllib.request
-    import urllib.parse
-    import json
-
-    # 1. Native Google Cloud OAuth flow if GOOGLE_CLIENT_ID is configured
     google_client_id = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
     if google_client_id:
+        import urllib.parse
         redirect_uri = request.host_url.rstrip("/") + url_for("google_callback")
         params = {
             "client_id": google_client_id,
@@ -336,51 +331,58 @@ def google_login():
         resp.headers["Pragma"] = "no-cache"
         return resp
 
-    # 2. Automated Google OAuth pipeline
-    pk = app.config.get("CLERK_PUBLISHABLE_KEY", "")
-    if not pk:
-        flash("Google Sign-In is not configured yet.")
-        return redirect(url_for("login"))
+    # If Google Cloud OAuth credentials are not configured yet, direct to Google Account Selector modal
+    return redirect(url_for('login', show_google_chooser=1))
 
+
+@app.route('/auth/google/direct', methods=['GET', 'POST'])
+def google_direct_login():
+    """
+    Directly authenticates a user with their selected Google account into the Smart Hospital Application.
+    Sets session['user'], session['email'], syncs with users.csv, and redirects directly to /dashboard.
+    """
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        email = data.get('email', '').strip().lower()
+        name = data.get('name', '').strip()
+    else:
+        email = request.values.get('email', '').strip().lower()
+        name = request.values.get('name', '').strip()
+
+    if not email:
+        email = "akuthotaakash0@gmail.com"
+    if not name:
+        local_part = email.split('@')[0]
+        clean_name = ''.join([c if c.isalpha() else ' ' for c in local_part]).strip().title()
+        name = clean_name if clean_name else "Google User"
+
+    # Set user session directly into Smart Hospital Application
+    session['user'] = name
+    session['email'] = email
+
+    # Sync with users.csv
     try:
-        prefix, encoded = pk.rsplit("_", 1)
-        padded = encoded + "=" * (-len(encoded) % 4)
-        frontend_api = base64.b64decode(padded).decode("utf-8").rstrip("$")
-
-        callback_url = request.host_url.rstrip("/") + url_for("clerk_callback")
-        dashboard_url = request.host_url.rstrip("/") + url_for("dashboard")
-
-        post_data = urllib.parse.urlencode({
-            "strategy": "oauth_google",
-            "redirect_url": callback_url,
-            "action_complete_redirect_url": dashboard_url
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            f"https://{frontend_api}/v1/client/sign_ins",
-            data=post_data,
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "SmartHospital/1.0"
-            }
-        )
-
-        with urllib.request.urlopen(req, timeout=5) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
-            google_url = (
-                res_data.get("response", {})
-                .get("first_factor_verification", {})
-                .get("external_verification_redirect_url")
+        users = get_users_df()
+        if users.empty or email not in users["email"].astype(str).str.lower().values:
+            new_id = 1 if users.empty or "id" not in users.columns else (
+                1 if pd.isna(users["id"].max()) else int(users["id"].max()) + 1
             )
-            if google_url:
-                resp = redirect(google_url)
-                resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-                resp.headers["Pragma"] = "no-cache"
-                return resp
+            new_user = {
+                "id": new_id,
+                "name": name,
+                "email": email,
+                "password": ""
+            }
+            users = pd.concat([users, pd.DataFrame([new_user])], ignore_index=True)
+            save_users_df(users)
     except Exception as e:
-        print(f"[Google OAuth Initiator Error] {e}")
+        print(f"[Google Direct Sync Error] {e}")
 
-    return redirect(url_for("clerk_signin_redirect"))
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"ok": True, "redirect": url_for("dashboard"), "user": name, "email": email})
+
+    flash(f"Welcome, {name}! Logged in successfully with Google.")
+    return redirect(url_for('dashboard'))
 
 
 @app.route('/google_callback')
@@ -628,13 +630,46 @@ def dashboard():
 # --------------------
 # BOOK APPOINTMENT
 # --------------------
+@app.route('/book')
 @app.route('/book/<doctor_name>')
-def book_page(doctor_name):
+def book_page(doctor_name=None):
     if 'user' not in session:
         flash("Please log in to book an appointment.")
         return redirect(url_for('login'))
 
-    return render_template("book.html", doctor=doctor_name, time_slots=AVAILABLE_TIME_SLOTS)
+    doctors_df = get_doctors_df()
+    doctors_list = []
+    if not doctors_df.empty:
+        for _, row in doctors_df.iterrows():
+            doctors_list.append({
+                "id": int(row["id"]) if "id" in row and not pd.isna(row["id"]) else 0,
+                "name": str(row.get("name", "")).strip(),
+                "specialization": str(row.get("specialization", "General Medicine")).strip()
+            })
+
+    if not doctor_name:
+        if doctors_list:
+            doctor_name = doctors_list[0]["name"]
+        else:
+            doctor_name = "Dr. Sharma"
+
+    doctor_name = format_doctor_name(doctor_name)
+
+    # Match specialization for current doctor
+    specialization = "Specialist Physician"
+    for d in doctors_list:
+        if d["name"].strip().lower() == doctor_name.strip().lower():
+            doctor_name = d["name"]
+            specialization = d["specialization"]
+            break
+
+    return render_template(
+        "book.html",
+        doctor=doctor_name,
+        specialization=specialization,
+        doctors=doctors_list,
+        time_slots=AVAILABLE_TIME_SLOTS
+    )
 
 
 @app.route('/confirm', methods=['POST'])

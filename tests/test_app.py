@@ -197,6 +197,55 @@ class HospitalAppComprehensiveTests(unittest.TestCase):
             notifs = notifs[notifs["patient_name"] != test_patient]
             app_module.save_notifications_df(notifs)
 
+    def test_direct_google_login_flow(self):
+        # 1. Test /google_login redirect behavior (never to clerk)
+        resp = self.client.get("/google_login", follow_redirects=False)
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("show_google_chooser=1", resp.location)
+
+        # 2. Test /auth/google/direct JSON POST (Account selector click)
+        direct_resp = self.client.post(
+            "/auth/google/direct",
+            json={"name": "Akuthota Akash", "email": "akuthotaakash0@gmail.com"},
+            headers={"X-Requested-With": "XMLHttpRequest"}
+        )
+        self.assertEqual(direct_resp.status_code, 200)
+        json_data = direct_resp.get_json()
+        self.assertTrue(json_data.get("ok"))
+        self.assertEqual(json_data.get("redirect"), "/dashboard")
+
+        # 3. Access dashboard with session established by Google login
+        dash_resp = self.client.get("/dashboard")
+        self.assertEqual(dash_resp.status_code, 200)
+        self.assertIn("Akuthota Akash", dash_resp.get_data(as_text=True))
+
+        # Cleanup test google user
+        users = app_module.get_users_df()
+        users = users[users["email"] != "akuthotaakash0@gmail.com"]
+        app_module.save_users_df(users)
+
+    def test_booking_page_prominent_doctor_display(self):
+        # Setup session
+        with self.client.session_transaction() as sess:
+            sess['user'] = "Booking Test User"
+            sess['email'] = "booking_user@example.com"
+
+        # 1. Test /book/Dr. Sharma
+        resp = self.client.get("/book/Dr. Sharma")
+        self.assertEqual(resp.status_code, 200)
+        html = resp.get_data(as_text=True)
+        # Doctor name must be prominent
+        self.assertIn("Dr. Sharma", html)
+        self.assertIn("Cardiologist", html)
+        self.assertIn("Verified Specialist", html)
+        self.assertIn("Confirm Appointment with", html)
+        self.assertIn("Change Specialist", html)
+
+        # 2. Test /book without doctor name (defaults cleanly to first doctor)
+        resp_default = self.client.get("/book")
+        self.assertEqual(resp_default.status_code, 200)
+        self.assertIn("Verified Specialist", resp_default.get_data(as_text=True))
+
 
 if __name__ == "__main__":
     unittest.main()
