@@ -93,14 +93,34 @@ class Notification(db.Model):
 def get_database_url():
     """
     Returns properly formatted SQLAlchemy database URL.
+    Checks all standard Vercel and Neon connection string keys.
     Converts legacy postgres:// to postgresql:// for modern SQLAlchemy compatibility.
     """
-    url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
-    if url:
-        url = url.strip()
-        if url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql://", 1)
-        return url
+    candidates = [
+        "DATABASE_URL",
+        "POSTGRES_URL",
+        "STORAGE_URL",
+        "NEON_DATABASE_URL",
+        "POSTGRES_URL_NON_POOLING",
+        "POSTGRES_PRISMA_URL"
+    ]
+    for key in candidates:
+        val = os.environ.get(key)
+        if val and val.strip():
+            url = val.strip()
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql://", 1)
+            return url
+
+    # Also search any environment variable containing postgres/neon connection string
+    for k, v in os.environ.items():
+        if ("POSTGRES" in k.upper() or "DATABASE" in k.upper() or "STORAGE" in k.upper()) and "URL" in k.upper():
+            if v and ("postgres" in v.lower() or "neon.tech" in v.lower()):
+                url = v.strip()
+                if url.startswith("postgres://"):
+                    url = url.replace("postgres://", "postgresql://", 1)
+                return url
+
     return None
 
 
