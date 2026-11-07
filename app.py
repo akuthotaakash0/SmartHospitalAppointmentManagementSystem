@@ -340,6 +340,7 @@ def google_direct_login():
     """
     Directly authenticates a user with their selected Google account into the Smart Hospital Application.
     Sets session['user'], session['email'], syncs with users.csv, and redirects directly to /dashboard.
+    Requires a valid user-supplied email to protect user privacy and account security.
     """
     if request.is_json:
         data = request.get_json(silent=True) or {}
@@ -349,8 +350,13 @@ def google_direct_login():
         email = request.values.get('email', '').strip().lower()
         name = request.values.get('name', '').strip()
 
-    if not email:
-        email = "akuthotaakash0@gmail.com"
+    # Reject if no valid email provided
+    if not email or "@" not in email:
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"ok": False, "error": "A valid Google email address is required."}), 400
+        flash("Please enter a valid Google email address to sign in.")
+        return redirect(url_for('login'))
+
     if not name:
         local_part = email.split('@')[0]
         clean_name = ''.join([c if c.isalpha() else ' ' for c in local_part]).strip().title()

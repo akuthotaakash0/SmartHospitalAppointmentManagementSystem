@@ -203,7 +203,15 @@ class HospitalAppComprehensiveTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertIn("show_google_chooser=1", resp.location)
 
-        # 2. Test /auth/google/direct JSON POST (Account selector click)
+        # 2. Test rejection of empty email (security check)
+        bad_resp = self.client.post(
+            "/auth/google/direct",
+            json={"name": "Hacker", "email": ""},
+            headers={"X-Requested-With": "XMLHttpRequest"}
+        )
+        self.assertEqual(bad_resp.status_code, 400)
+
+        # 3. Test /auth/google/direct JSON POST (Account selector click)
         direct_resp = self.client.post(
             "/auth/google/direct",
             json={"name": "Akuthota Akash", "email": "akuthotaakash0@gmail.com"},
@@ -214,7 +222,7 @@ class HospitalAppComprehensiveTests(unittest.TestCase):
         self.assertTrue(json_data.get("ok"))
         self.assertEqual(json_data.get("redirect"), "/dashboard")
 
-        # 3. Access dashboard with session established by Google login
+        # 4. Access dashboard with session established by Google login
         dash_resp = self.client.get("/dashboard")
         self.assertEqual(dash_resp.status_code, 200)
         self.assertIn("Akuthota Akash", dash_resp.get_data(as_text=True))
