@@ -7,3 +7,5 @@ Flask-Mail
 Flask-SQLAlchemy>=3.0.0
 psycopg2-binary>=2.9.0
 pg8000>=1.30.0
+scramp>=1.4.0
+asn1crypto>=1.5.0

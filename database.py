@@ -133,32 +133,55 @@ def init_database(app):
     """
     Initializes PostgreSQL if configured in environment, otherwise falls back to SQLite.
     Creates all tables and seeds existing CSV data if database is empty.
+    Protected with try/except so connection/driver errors never crash the application.
     """
     global _flask_app
     _flask_app = app
 
-    db_url = get_database_url()
-    if db_url:
-        app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            "pool_pre_ping": True,
-            "pool_recycle": 300,
-        }
-        print(f"[Database] Configured PostgreSQL from environment variable.")
-    else:
-        sqlite_path = os.path.join(app.root_path, "hospital_local.db")
-        app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
-        print(f"[Database] PostgreSQL not configured. Using local SQLite/CSV fallback.")
+    try:
+        db_url = get_database_url()
+        if db_url:
+            # Check driver: use psycopg2 if available, else pure-python pg8000 for serverless
+            try:
+                import psycopg2
+                driver_prefix = "postgresql://"
+            except Exception:
+                driver_prefix = "postgresql+pg8000://"
 
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", driver_prefix, 1)
+            elif db_url.startswith("postgresql://") and driver_prefix == "postgresql+pg8000://":
+                db_url = db_url.replace("postgresql://", driver_prefix, 1)
 
-    with app.app_context():
+            app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+            app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+                "pool_pre_ping": True,
+                "pool_recycle": 300,
+            }
+            print(f"[Database] Configured PostgreSQL URL.")
+        else:
+            sqlite_path = os.path.join(app.root_path, "hospital_local.db")
+            app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
+            print(f"[Database] PostgreSQL not configured. Using local fallback.")
+
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        db.init_app(app)
+
+        with app.app_context():
+            try:
+                db.create_all()
+                seed_data_from_csv(app)
+            except Exception as e:
+                print(f"[Database Init Table Error] {e}")
+
+    except Exception as e:
+        print(f"[Database Critical Error, falling back to local] {e}")
         try:
-            db.create_all()
-            seed_data_from_csv(app)
-        except Exception as e:
-            print(f"[Database Init Error] {e}")
+            sqlite_path = os.path.join(app.root_path, "hospital_local.db")
+            app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{sqlite_path}"
+            db.init_app(app)
+        except Exception:
+            pass
 
 
 def seed_data_from_csv(app):
