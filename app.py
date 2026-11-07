@@ -60,6 +60,16 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'norep
 mail = Mail(app)
 
 
+AVAILABLE_TIME_SLOTS = [
+    "09:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:30 AM - 12:30 PM",
+    "02:00 PM - 03:00 PM",
+    "03:30 PM - 04:30 PM",
+    "04:30 PM - 05:30 PM"
+]
+
+
 # --------------------
 # Ensure CSV Storage
 # --------------------
@@ -124,7 +134,20 @@ def ensure_files():
 
     # Appointments file
     if not os.path.exists(APPOINTMENTS_FILE) or os.path.getsize(APPOINTMENTS_FILE) == 0:
-        pd.DataFrame(columns=["id", "patient_name", "doctor_name", "date"]).to_csv(APPOINTMENTS_FILE, index=False)
+        pd.DataFrame(columns=["id", "patient_name", "doctor_name", "date", "time_slot"]).to_csv(APPOINTMENTS_FILE, index=False)
+    else:
+        try:
+            df = pd.read_csv(APPOINTMENTS_FILE)
+            needed_cols = ["id", "patient_name", "doctor_name", "date", "time_slot"]
+            updated = False
+            for col in needed_cols:
+                if col not in df.columns:
+                    df[col] = "09:00 AM - 10:00 AM" if col == "time_slot" else ""
+                    updated = True
+            if updated:
+                df.to_csv(APPOINTMENTS_FILE, index=False)
+        except Exception:
+            pass
 
     # Notifications file
     if not os.path.exists(NOTIFICATIONS_FILE) or os.path.getsize(NOTIFICATIONS_FILE) == 0:
@@ -167,9 +190,12 @@ def save_doctors_df(df):
 def get_appointments_df():
     ensure_files()
     try:
-        return pd.read_csv(APPOINTMENTS_FILE)
+        df = pd.read_csv(APPOINTMENTS_FILE)
+        if "time_slot" not in df.columns:
+            df["time_slot"] = "09:00 AM - 10:00 AM"
+        return df
     except Exception:
-        return pd.DataFrame(columns=["id", "patient_name", "doctor_name", "date"])
+        return pd.DataFrame(columns=["id", "patient_name", "doctor_name", "date", "time_slot"])
 
 
 def save_appointments_df(df):
@@ -447,7 +473,7 @@ def book_page(doctor_name):
         flash("Please log in to book an appointment.")
         return redirect(url_for('login'))
 
-    return render_template("book.html", doctor=doctor_name)
+    return render_template("book.html", doctor=doctor_name, time_slots=AVAILABLE_TIME_SLOTS)
 
 
 @app.route('/confirm', methods=['POST'])
@@ -458,6 +484,9 @@ def confirm():
 
     doctor_input = request.form.get('doctor', '').strip()
     date_input = request.form.get('date', '').strip()
+    time_slot = request.form.get('time_slot', '09:00 AM - 10:00 AM').strip()
+    if not time_slot:
+        time_slot = '09:00 AM - 10:00 AM'
 
     if not doctor_input or not date_input:
         flash("Please select both a doctor and a valid date.")
@@ -465,6 +494,18 @@ def confirm():
 
     doctor_name = format_doctor_name(doctor_input)
     appointments = get_appointments_df()
+
+    # Prevent double booking of same doctor at same date & time slot
+    if not appointments.empty and "doctor_name" in appointments.columns and "date" in appointments.columns:
+        conflict = appointments[
+            (appointments["doctor_name"] == doctor_name) &
+            (appointments["date"] == date_input) &
+            (appointments["time_slot"] == time_slot)
+        ]
+        if not conflict.empty:
+            flash(f"{doctor_name} is already booked for {time_slot} on {date_input}. Please choose a different time slot or date.")
+            return redirect(url_for('book_page', doctor_name=doctor_name))
+
     new_id = 1 if appointments.empty or "id" not in appointments.columns else (
         1 if pd.isna(appointments["id"].max()) else int(appointments["id"].max()) + 1
     )
@@ -473,7 +514,8 @@ def confirm():
         "id": new_id,
         "patient_name": session['user'],
         "doctor_name": doctor_name,
-        "date": date_input
+        "date": date_input,
+        "time_slot": time_slot
     }
 
     appointments = pd.concat([appointments, pd.DataFrame([new_data])], ignore_index=True)
@@ -493,10 +535,12 @@ Your appointment has been successfully scheduled.
 Details:
 - Doctor: {doctor_name}
 - Date: {date_input}
+- Time Slot: {time_slot}
+- Appointment ID: #{new_id}
 - Status: Confirmed
 
 Please arrive 10 minutes before your scheduled appointment.
-You can view or cancel this appointment anytime from your dashboard.
+You can view, download consultation slips, or reschedule your appointment anytime from your dashboard.
 
 Best regards,
 Smart Hospital Management System
@@ -505,6 +549,139 @@ Smart Hospital Management System
 
     flash("Appointment booked successfully!")
     return redirect(url_for('history'))
+
+
+# --------------------
+# RESCHEDULE APPOINTMENT
+# --------------------
+@app.route('/reschedule/<int:id>', methods=['GET', 'POST'])
+def reschedule(id):
+    if 'user' not in session:
+        flash("Please log in to reschedule appointments.")
+        return redirect(url_for('login'))
+
+    appointments = get_appointments_df()
+    match = appointments[(appointments["id"] == id) & (appointments["patient_name"] == session['user'])]
+
+    if match.empty:
+        flash("Appointment not found or you are not authorized to reschedule it.")
+        return redirect(url_for('history'))
+
+    current_appt = match.iloc[0].to_dict()
+
+    if request.method == 'POST':
+        new_date = request.form.get('date', '').strip()
+        new_slot = request.form.get('time_slot', '09:00 AM - 10:00 AM').strip()
+        if not new_slot:
+            new_slot = '09:00 AM - 10:00 AM'
+
+        if not new_date:
+            flash("Please provide a valid date to reschedule.")
+            return redirect(url_for('reschedule', id=id))
+
+        doc_name = current_appt["doctor_name"]
+        conflict = appointments[
+            (appointments["id"] != id) &
+            (appointments["doctor_name"] == doc_name) &
+            (appointments["date"] == new_date) &
+            (appointments["time_slot"] == new_slot)
+        ]
+        if not conflict.empty:
+            flash(f"{doc_name} is already booked for {new_slot} on {new_date}. Please choose another time slot.")
+            return redirect(url_for('reschedule', id=id))
+
+        old_date = current_appt.get("date")
+        old_slot = current_appt.get("time_slot", "Morning Slot")
+
+        idx = match.index[0]
+        appointments.at[idx, "date"] = new_date
+        appointments.at[idx, "time_slot"] = new_slot
+        save_appointments_df(appointments)
+
+        # Record notification
+        notifications = get_notifications_df()
+        new_notif_id = 1 if notifications.empty or "id" not in notifications.columns else (
+            1 if pd.isna(notifications["id"].max()) else int(notifications["id"].max()) + 1
+        )
+        msg = f"Your appointment with {doc_name} was rescheduled from {old_date} ({old_slot}) to {new_date} ({new_slot})."
+        new_notif = {
+            "id": new_notif_id,
+            "patient_name": session['user'],
+            "message": msg,
+            "read": False
+        }
+        notifications = pd.concat([notifications, pd.DataFrame([new_notif])], ignore_index=True)
+        save_notifications_df(notifications)
+
+        # Email notification
+        users = get_users_df()
+        patient = users[users["name"] == session['user']]
+        if not patient.empty:
+            patient_email = patient.iloc[0]["email"]
+            email_body = f"""Appointment Rescheduled!
+
+Dear {session['user']},
+
+Your appointment #{id} with {doc_name} has been successfully rescheduled.
+
+Updated Details:
+- Doctor: {doc_name}
+- New Date: {new_date}
+- New Time Slot: {new_slot}
+- Status: Confirmed
+
+Previous Schedule: {old_date} ({old_slot})
+
+Best regards,
+Smart Hospital Management System
+"""
+            send_email(patient_email, "Appointment Rescheduled", email_body)
+
+        flash(f"Appointment successfully rescheduled to {new_date} at {new_slot}!")
+        return redirect(url_for('history'))
+
+    return render_template(
+        "reschedule.html",
+        appointment=current_appt,
+        time_slots=AVAILABLE_TIME_SLOTS
+    )
+
+
+# --------------------
+# APPOINTMENT SLIP / PASS
+# --------------------
+@app.route('/appointment_slip/<int:id>')
+def appointment_slip(id):
+    if 'user' not in session and 'admin' not in session:
+        flash("Please log in to view appointment slips.")
+        return redirect(url_for('login'))
+
+    appointments = get_appointments_df()
+    if 'admin' in session:
+        match = appointments[appointments["id"] == id]
+    else:
+        match = appointments[(appointments["id"] == id) & (appointments["patient_name"] == session['user'])]
+
+    if match.empty:
+        flash("Appointment not found.")
+        return redirect(url_for('history') if 'user' in session else url_for('admin_dashboard'))
+
+    appt = match.iloc[0].to_dict()
+
+    doctors = get_doctors_df()
+    doc_match = doctors[doctors["name"] == appt.get("doctor_name")]
+    specialization = doc_match.iloc[0]["specialization"] if not doc_match.empty else "General Practice"
+
+    users = get_users_df()
+    patient = users[users["name"] == appt.get("patient_name")]
+    patient_email = patient.iloc[0]["email"] if not patient.empty else "N/A"
+
+    return render_template(
+        "appointment_slip.html",
+        appt=appt,
+        specialization=specialization,
+        patient_email=patient_email
+    )
 
 
 # --------------------

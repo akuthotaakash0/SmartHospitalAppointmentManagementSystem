@@ -64,7 +64,7 @@
                         <tr>
                             <th class="ps-4">Booking ID</th>
                             <th>Specialist Doctor</th>
-                            <th>Appointment Date</th>
+                            <th>Date & Time Slot</th>
                             <th>Status</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
@@ -83,9 +83,16 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge bg-light text-dark border px-3 py-2 fw-semibold">
-                                    <i class="bi bi-calendar3 me-1 text-primary"></i> {{ appt[3] }}
-                                </span>
+                                <div>
+                                    <span class="badge bg-light text-dark border px-2 py-1 fw-semibold me-1">
+                                        <i class="bi bi-calendar3 me-1 text-primary"></i> {{ appt[3] }}
+                                    </span>
+                                    {% if appt|length > 4 and appt[4] %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1 small">
+                                        <i class="bi bi-clock me-1"></i> {{ appt[4] }}
+                                    </span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td>
                                 <span
@@ -94,11 +101,24 @@
                                 </span>
                             </td>
                             <td class="text-end pe-4">
-                                <a href="/delete_appointment/{{ appt[0] }}"
-                                    onclick="return confirm('Are you sure you want to cancel this appointment with {{ appt[2] }} on {{ appt[3] }}?');"
-                                    class="btn btn-outline-danger btn-sm rounded-pill px-3">
-                                    <i class="bi bi-x-circle me-1"></i> Cancel
-                                </a>
+                                <div class="btn-group">
+                                    <a href="/appointment_slip/{{ appt[0] }}"
+                                        class="btn btn-outline-primary btn-sm rounded-pill px-2 me-1"
+                                        title="Print consultation slip">
+                                        <i class="bi bi-printer me-1"></i> Slip
+                                    </a>
+                                    <a href="/reschedule/{{ appt[0] }}"
+                                        class="btn btn-outline-secondary btn-sm rounded-pill px-2 me-1"
+                                        title="Reschedule appointment">
+                                        <i class="bi bi-calendar-range me-1"></i> Reschedule
+                                    </a>
+                                    <a href="/delete_appointment/{{ appt[0] }}"
+                                        onclick="return confirm('Are you sure you want to cancel this appointment with {{ appt[2] }} on {{ appt[3] }}?');"
+                                        class="btn btn-outline-danger btn-sm rounded-pill px-2"
+                                        title="Cancel appointment">
+                                        <i class="bi bi-x-circle me-1"></i> Cancel
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

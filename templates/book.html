@@ -40,6 +40,19 @@
                         <p class="text-muted small">Confirm consultation with your selected specialist</p>
                     </div>
 
+                    {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                    {% for msg in messages %}
+                    <div class="alert alert-warning alert-custom alert-dismissible fade show mb-4 d-flex align-items-center gap-2"
+                        role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span class="small">{{ msg }}</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
                     <form action="/confirm" method="POST">
                         <div class="mb-3">
                             <label class="form-label form-label-modern">Selected Doctor</label>
@@ -51,7 +64,7 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label form-label-modern">Preferred Consultation Date</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white border-end-0 text-muted"><i
@@ -60,6 +73,22 @@
                                     class="form-control form-control-modern border-start-0 ps-0" required>
                             </div>
                             <div class="form-text text-muted small">Please select a valid upcoming date.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label form-label-modern">Select Consultation Time Slot</label>
+                            <div class="row g-2">
+                                {% for slot in time_slots %}
+                                <div class="col-6">
+                                    <div class="form-check border rounded-3 p-2 d-flex align-items-center h-100 bg-white">
+                                        <input class="form-check-input ms-0 me-2" type="radio" name="time_slot" id="slot_{{ loop.index }}" value="{{ slot }}" {% if loop.first %}checked{% endif %}>
+                                        <label class="form-check-label small fw-semibold text-dark cursor-pointer text-truncate" for="slot_{{ loop.index }}">
+                                            <i class="bi bi-clock me-1 text-primary"></i>{{ slot }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
 
                         <div class="d-grid gap-2">

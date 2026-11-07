@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reschedule Appointment — Smart Hospital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body class="bg-light d-flex flex-column min-vh-100 justify-content-between">
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand navbar-brand-custom" href="/dashboard">
+                <span class="navbar-brand-icon"><i class="bi bi-hospital"></i></span>
+                Smart Hospital
+            </a>
+            <a href="/history" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Back to History
+            </a>
+        </div>
+    </nav>
+
+    <!-- MAIN FORM -->
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-6">
+                <div class="card card-modern p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <div class="navbar-brand-icon mx-auto mb-3"
+                            style="width: 52px; height: 52px; font-size: 1.6rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                            <i class="bi bi-calendar-range text-white"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark">Reschedule Consultation</h3>
+                        <p class="text-muted small">Update consultation schedule for Appointment #{{ appointment.id }}</p>
+                    </div>
+
+                    {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                    {% for msg in messages %}
+                    <div class="alert alert-warning alert-custom alert-dismissible fade show mb-4 d-flex align-items-center gap-2"
+                        role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span class="small">{{ msg }}</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <!-- CURRENT DETAILS BADGE -->
+                    <div class="card bg-light border-0 rounded-3 p-3 mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-semibold text-uppercase">Current Schedule</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">#{{ appointment.id }}</span>
+                        </div>
+                        <div class="fw-bold text-dark fs-6">{{ appointment.doctor_name }}</div>
+                        <div class="text-muted small mt-1">
+                            <i class="bi bi-calendar3 me-1"></i> {{ appointment.date }} &bull;
+                            <i class="bi bi-clock me-1"></i> {{ appointment.get('time_slot', 'Morning Slot') }}
+                        </div>
+                    </div>
+
+                    <form action="/reschedule/{{ appointment.id }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label form-label-modern">New Consultation Date</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i
+                                        class="bi bi-calendar-date"></i></span>
+                                <input type="date" name="date" id="rescheduleDate" value="{{ appointment.date }}"
+                                    class="form-control form-control-modern border-start-0 ps-0" required>
+                            </div>
+                            <div class="form-text text-muted small">Select an upcoming date for your consultation.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label form-label-modern">New Consultation Time Slot</label>
+                            <div class="row g-2">
+                                {% for slot in time_slots %}
+                                <div class="col-6">
+                                    <div class="form-check border rounded-3 p-2 d-flex align-items-center h-100 bg-white">
+                                        <input class="form-check-input ms-0 me-2" type="radio" name="time_slot" id="reslot_{{ loop.index }}" value="{{ slot }}" {% if appointment.get('time_slot') == slot or (loop.first and not appointment.get('time_slot')) %}checked{% endif %}>
+                                        <label class="form-check-label small fw-semibold text-dark cursor-pointer text-truncate" for="reslot_{{ loop.index }}">
+                                            <i class="bi bi-clock me-1 text-primary"></i>{{ slot }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-brand py-2">
+                                <i class="bi bi-arrow-repeat me-1"></i> Save New Schedule
+                            </button>
+                            <a href="/history" class="btn btn-outline-secondary py-2 rounded-pill">
+                                Keep Current Schedule
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer-custom py-3 text-center small text-secondary">
+        Smart Hospital System &copy; 2026. Flexible Patient Scheduling.
+    </footer>
+
+    <script>
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('rescheduleDate').setAttribute('min', today);
+    </script>
+</body>
+
+</html>

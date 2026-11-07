@@ -10,10 +10,13 @@ A full-stack healthcare web application built with **Flask**, **Pandas**, and **
   - Secure patient registration and authentication with cryptographic password hashing (`werkzeug.security`).
   - **Clerk SSO integration** — sign in/sign up with Google, GitHub, email, or magic links via [Clerk](https://clerk.com). Falls back to classic email/password when Clerk is not configured.
   - Specialist doctor directory (Cardiology, Dermatology, Orthopedics, Gynecology, Dentistry, etc.).
-  - Appointment scheduling with automatic date validation.
+  - **Consultation Time Slot Scheduling** — select specific consultation time windows (`09:00 AM - 05:30 PM`).
+  - **Double-Booking Prevention** — automated conflict detection blocks duplicate bookings for the same doctor on the same date and time slot.
+  - **Appointment Rescheduling** — easily update consultation date and time slot without cancelling.
+  - **Printable Consultation Slip & Voucher** — official patient appointment pass with token number, instructions, and print/PDF support.
   - Appointment history view with status tracking and patient-initiated appointment cancellation.
   - In-app notification alerts with one-click dismissal.
-  - Automatic email notifications for account welcome, appointment booking, and cancellations.
+  - Automatic email notifications for account welcome, appointment booking, rescheduling, and cancellations.
 
 - **Admin Control Panel**:
   - Protected admin portal with session authentication.
@@ -133,7 +136,9 @@ git push origin main
 │   ├── register.html        # Patient registration (+ Clerk sign-up)
 │   ├── clerk_callback.html  # Clerk OAuth callback handler
 │   ├── dashboard.html       # Patient dashboard & specialists
-│   ├── book.html            # Appointment booking
+│   ├── book.html            # Appointment booking & time-slot selection
+│   ├── reschedule.html      # Appointment rescheduling portal
+│   ├── appointment_slip.html # Official consultation pass & printable voucher
 │   ├── history.html         # Patient appointment history
 │   ├── admin_login.html     # Admin authentication
 │   ├── admin_dashboard.html # Admin control center

@@ -139,7 +139,7 @@
                             <th class="ps-4">ID</th>
                             <th>Patient Name</th>
                             <th>Attending Doctor</th>
-                            <th>Scheduled Date</th>
+                            <th>Date & Time Slot</th>
                             <th class="text-end pe-4">Action</th>
                         </tr>
                     </thead>
@@ -150,11 +150,23 @@
                             <td class="fw-bold text-dark">{{ appt[1] }}</td>
                             <td>{{ appt[2] }}</td>
                             <td>
-                                <span class="badge bg-light text-dark border px-3 py-2 fw-semibold">
-                                    <i class="bi bi-calendar3 me-1 text-primary"></i> {{ appt[3] }}
-                                </span>
+                                <div>
+                                    <span class="badge bg-light text-dark border px-2 py-1 fw-semibold me-1">
+                                        <i class="bi bi-calendar3 me-1 text-primary"></i> {{ appt[3] }}
+                                    </span>
+                                    {% if appt|length > 4 and appt[4] %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1 small">
+                                        <i class="bi bi-clock me-1"></i> {{ appt[4] }}
+                                    </span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td class="text-end pe-4">
+                                <a href="/appointment_slip/{{ appt[0] }}" target="_blank"
+                                    class="btn btn-outline-primary btn-sm rounded-pill px-3 me-1"
+                                    title="View & print consultation slip">
+                                    <i class="bi bi-printer me-1"></i> Slip
+                                </a>
                                 <a href="/admin_delete_appointment/{{ appt[0] }}"
                                     onclick="return confirm('Cancel appointment #{{ appt[0] }} for {{ appt[1] }} and notify patient?');"
                                     class="btn btn-outline-danger btn-sm rounded-pill px-3">
