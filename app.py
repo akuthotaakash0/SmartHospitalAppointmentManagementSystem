@@ -309,18 +309,38 @@ def clerk_sync():
 def google_login():
     """
     Directly initiate Google OAuth sign-in.
-    Fetches the Google account chooser authorization URL from Clerk
-    and redirects the user directly to Google account selection.
+    1. If GOOGLE_CLIENT_ID is configured, redirects directly to Google Cloud OAuth.
+    2. Otherwise, uses the pre-configured Google OAuth endpoint to open Google's account chooser.
+    In both cases, user selects their Google account and is logged directly into the Smart Hospital app.
     """
-    pk = app.config.get("CLERK_PUBLISHABLE_KEY", "")
-    if not pk:
-        flash("Google authentication is not configured.")
-        return redirect(url_for("login"))
-
     import base64
     import urllib.request
     import urllib.parse
     import json
+
+    # 1. Native Google Cloud OAuth flow if GOOGLE_CLIENT_ID is configured
+    google_client_id = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+    if google_client_id:
+        redirect_uri = request.host_url.rstrip("/") + url_for("google_callback")
+        params = {
+            "client_id": google_client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "access_type": "offline",
+            "prompt": "select_account"
+        }
+        google_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+        resp = redirect(google_url)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        return resp
+
+    # 2. Automated Google OAuth pipeline
+    pk = app.config.get("CLERK_PUBLISHABLE_KEY", "")
+    if not pk:
+        flash("Google Sign-In is not configured yet.")
+        return redirect(url_for("login"))
 
     try:
         prefix, encoded = pk.rsplit("_", 1)
@@ -360,8 +380,72 @@ def google_login():
     except Exception as e:
         print(f"[Google OAuth Initiator Error] {e}")
 
-    # Fallback to general redirect if direct API call fails
     return redirect(url_for("clerk_signin_redirect"))
+
+
+@app.route('/google_callback')
+def google_callback():
+    """Native Google Cloud OAuth 2.0 callback."""
+    code = request.args.get("code")
+    if not code:
+        flash("Google sign-in was cancelled.")
+        return redirect(url_for('login'))
+
+    google_client_id = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+    google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
+    redirect_uri = request.host_url.rstrip("/") + url_for("google_callback")
+
+    import urllib.request
+    import urllib.parse
+    import json
+
+    try:
+        token_data = urllib.parse.urlencode({
+            "code": code,
+            "client_id": google_client_id,
+            "client_secret": google_client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code"
+        }).encode("utf-8")
+
+        req = urllib.request.Request("https://oauth2.googleapis.com/token", data=token_data)
+        with urllib.request.urlopen(req, timeout=10) as r:
+            token_res = json.loads(r.read().decode("utf-8"))
+            access_token = token_res.get("access_token")
+
+        userinfo_req = urllib.request.Request(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        with urllib.request.urlopen(userinfo_req, timeout=10) as r:
+            userinfo = json.loads(r.read().decode("utf-8"))
+
+        email = userinfo.get("email", "").lower()
+        name = userinfo.get("name") or email.split("@")[0]
+
+        session['user'] = name
+        session['email'] = email
+
+        users = get_users_df()
+        if users.empty or email not in users["email"].astype(str).str.lower().values:
+            new_id = 1 if users.empty or "id" not in users.columns else (
+                1 if pd.isna(users["id"].max()) else int(users["id"].max()) + 1
+            )
+            new_user = {
+                "id": new_id,
+                "name": name,
+                "email": email,
+                "password": ""
+            }
+            users = pd.concat([users, pd.DataFrame([new_user])], ignore_index=True)
+            save_users_df(users)
+
+        flash(f"Welcome, {name}! Logged in successfully with Google.")
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"[Google Direct Callback Error] {e}")
+        flash("Google authentication failed. Please try again.")
+        return redirect(url_for('login'))
 
 
 # --------------------
